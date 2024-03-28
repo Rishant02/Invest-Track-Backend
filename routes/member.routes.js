@@ -8,6 +8,10 @@ const {
   getAllMembers,
   createMember,
   deleteMember,
+  moveMember,
+  getMember,
+  getMembersByFirm,
+  updateMember,
 } = require("../controllers/member.controller");
 
 router
@@ -20,15 +24,17 @@ router
     uploadFile(false),
     createMember
   )
-  .get("/:id", isAuthenticated, isAdmin, (req, res) =>
-    res.json({ message: "GET /api/members/:id" })
-  )
-  .put("/:id", isAuthenticated, isAdmin, (req, res) =>
-    res.json({ message: "PUT /api/members/:id" })
+  .get("/:id", isAuthenticated, isAdmin, getMember)
+  .put(
+    "/:id",
+    isAuthenticated,
+    isAdmin,
+    upload.single("businessCard"),
+    uploadFile(false),
+    updateMember
   )
   .delete("/:id", isAuthenticated, isAdmin, deleteMember)
-  .post("/:id/move", isAuthenticated, isAdmin, (req, res) =>
-    res.json({ message: "POST /api/members/:id/move" })
-  );
+  .post("/:id/move", isAuthenticated, isAdmin, moveMember)
+  .get("/firm/:firmId", isAuthenticated, isAdmin, getMembersByFirm);
 
 module.exports = router;

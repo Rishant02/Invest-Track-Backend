@@ -2,6 +2,29 @@ const mongoose = require("mongoose");
 const validator = require("validator");
 const addressSchema = require("./address.schema");
 
+const phoneNumberSchema = new mongoose.Schema(
+  {
+    countryCode: {
+      type: String,
+      trim: true,
+      validate: {
+        validator: validator.isISO31661Alpha2,
+        message: "Please enter a valid country code",
+      },
+    },
+    number: {
+      type: String,
+      trim: true,
+      validate: {
+        validator: (value) =>
+          validator.isMobilePhone(value, "any", { strictMode: false }),
+        message: "Please enter a valid mobile number",
+      },
+    },
+  },
+  { _id: false }
+);
+
 const memberSchema = new mongoose.Schema(
   {
     name: {
@@ -12,9 +35,9 @@ const memberSchema = new mongoose.Schema(
     email: {
       type: String,
       trim: true,
-      validate: [validator.isEmail, "Please enter a valid email"],
       unique: true,
       required: true,
+      validate: [validator.isEmail, "Please enter a valid email"],
     },
     firm: {
       type: mongoose.Schema.Types.ObjectId,
@@ -39,45 +62,8 @@ const memberSchema = new mongoose.Schema(
       trim: true,
       required: true,
     },
-    mobileNumber: {
-      countryCode: {
-        type: String,
-        trim: true,
-        validate: {
-          validator: function (value) {
-            // Example validation: Validate against ISO 3166-1 alpha-2 country codes
-            return validator.isISO31661Alpha2(value);
-          },
-          message: "Please enter a valid country code",
-        },
-      },
-      number: {
-        type: String,
-        trim: true,
-        unique: true,
-        validate: {
-          validator: function (value) {
-            return validator.isMobilePhone(value, "any", { strictMode: false });
-          },
-          message: "Please enter a valid mobile number",
-        },
-      },
-    },
-    officeNumber: {
-      countryCode: {
-        type: String,
-        trim: true,
-        validate: [
-          validator.isISO31661Alpha2,
-          "Please enter a valid country code",
-        ],
-      },
-      number: {
-        type: String,
-        trim: true,
-        unique: true,
-      },
-    },
+    mobileNumber: phoneNumberSchema,
+    officeNumber: phoneNumberSchema,
     address: addressSchema,
     businessCard: {
       type: mongoose.Schema.Types.ObjectId,
@@ -107,9 +93,7 @@ const BrokerPersonSchema = new mongoose.Schema({
     trim: true,
     required: true,
     validate: {
-      validator: function (value) {
-        return value.length > 0;
-      },
+      validator: (value) => value.length > 0,
       message: "Please select at least one sector",
     },
   },
@@ -121,16 +105,12 @@ const investorPersonSchema = new mongoose.Schema({
     trim: true,
     required: true,
     validate: {
-      validator: function (value) {
-        return value.length > 0;
-      },
+      validator: (value) => value.length > 0,
       message: "Please select at least one sector",
     },
   },
   fundSize: {
-    globalExposure: {
-      type: Number,
-    },
+    globalExposure: Number,
     indianExposure: {
       type: Number,
       required: true,
@@ -141,9 +121,7 @@ const investorPersonSchema = new mongoose.Schema({
     trim: true,
     required: true,
     validate: {
-      validator: function (value) {
-        return value.length > 0;
-      },
+      validator: (value) => value.length > 0,
       message: "Please select at least one sector",
     },
   },
@@ -153,11 +131,15 @@ const investorPersonSchema = new mongoose.Schema({
   },
   holdingSize: {
     type: Number,
-    required: () => (this.isExistingInvestor ? true : false),
+    required: function () {
+      return this.isExistingInvestor || false;
+    },
   },
   lastHoldingDate: {
     type: Date,
-    required: () => (this.isExistingInvestor ? true : false),
+    required: function () {
+      return this.isExistingInvestor || false;
+    },
   },
 });
 

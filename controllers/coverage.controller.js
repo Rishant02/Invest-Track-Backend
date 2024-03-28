@@ -40,9 +40,7 @@ module.exports.createCoverage = asyncHandler(async (req, res, next) => {
     await Broker.findByIdAndUpdate(brokerId, {
       $addToSet: { coverages: coverage._id },
     });
-    if (file) {
-      await file.save();
-    }
+    await file?.save();
     return res.status(201).json({
       success: true,
       data: coverage,
@@ -96,6 +94,9 @@ module.exports.deleteCoverage = asyncHandler(async (req, res, next) => {
   try {
     const { brokerId, id: coverageId } = req.params;
     const coverage = await Coverage.findByIdAndDelete(coverageId);
+    if (!coverage) {
+      throw new AppError("Coverage not found", 404);
+    }
     const broker = await Broker.findByIdAndUpdate(
       brokerId,
       {
@@ -103,7 +104,10 @@ module.exports.deleteCoverage = asyncHandler(async (req, res, next) => {
       },
       { new: true }
     );
-    await File.findByIdAndDelete(coverage.coverageFile);
+    if (!broker) {
+      throw new AppError("Broker not found", 404);
+    }
+    await File.findByIdAndDelete(coverage?.coverageFile);
     res.status(200).json({
       success: true,
       message: `Coverage for ${broker.name} has been deleted`,

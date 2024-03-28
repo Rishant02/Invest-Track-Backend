@@ -4,7 +4,7 @@ const Coverage = require("../models/coverage.model");
 const User = require("../models/user.model");
 const AppError = require("../middleware/AppError");
 const File = require("../models/file.model");
-const { Member } = require("../models/member.model");
+// const { Member } = require("../models/member.model");
 const Interaction = require("../models/interaction.model");
 
 // @desc    Get all firms by firmType
@@ -18,7 +18,7 @@ module.exports.getFirms = asyncHandler(async (req, res, next) => {
     }
     let query = Firm.find({ firmType })
       .sort({ createdAt: -1 })
-      .populate("members")
+      .populate("members", "name email designation memberType createdAt")
       .lean();
     if (page && perPage) {
       const currentPage = parseInt(page);
@@ -123,20 +123,27 @@ module.exports.updateFirm = asyncHandler(async (req, res, next) => {
 // @access  Private
 module.exports.deleteFirm = asyncHandler(async (req, res, next) => {
   try {
-    const firm = await Firm.findByIdAndDelete(req.params.id);
+    // const firm = await Firm.findByIdAndDelete(req.params.id);
+    const firm = await Firm.findByIdAndUpdate(
+      req.params.id,
+      {
+        isActive: false,
+      },
+      { new: true }
+    );
     if (!firm) {
       throw new AppError("Firm not found", 404);
     }
-    await User.findByIdAndUpdate(req.user._id, {
-      $pull: { firms: firm._id },
-    });
-    await Coverage.deleteMany({ firm: firm._id });
-    await File.deleteMany({ firmId: firm._id });
-    await Member?.deleteMany({ firm: firm._id });
-    await Interaction?.deleteMany({ firm: firm._id });
+    // await User.findByIdAndUpdate(req.user._id, {
+    //   $pull: { firms: firm._id },
+    // });
+    // await Coverage.deleteMany({ firm: firm._id });
+    // await File.deleteMany({ firmId: firm._id });
+    // await Member.deleteMany({ firm: firm._id });
+    // await Interaction.deleteMany({ firm: firm._id }); // TODO: to be discussed
     res
       .status(200)
-      .json({ success: true, message: `${firm.name} has been deleted` });
+      .json({ success: true, message: `${firm.name} has been deactivated` });
   } catch (err) {
     next(err);
   }
