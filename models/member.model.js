@@ -57,7 +57,7 @@ const memberSchema = new mongoose.Schema(
         },
       },
     ],
-    destination: {
+    designation: {
       type: String,
       trim: true,
       required: true,

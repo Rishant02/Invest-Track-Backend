@@ -56,8 +56,8 @@ module.exports.loginUser = asyncHandler(async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: `${user.name} has successfully logged in`,
-      data: user,
-      token,
+      user,
+      accessToken: token,
     });
   } catch (err) {
     next(err);
