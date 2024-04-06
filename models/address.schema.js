@@ -7,6 +7,11 @@ const addressSchema = {
     type: String,
     trim: true,
   },
+  state: {
+    type: String,
+    trim: true,
+    required: true,
+  },
   city: {
     type: String,
     trim: true,
