@@ -12,11 +12,6 @@ const addressSchema = {
     trim: true,
     required: true,
   },
-  city: {
-    type: String,
-    trim: true,
-    required: true,
-  },
   region: {
     type: String,
     trim: true,
