@@ -7,7 +7,7 @@ const CoverageSchema = new mongoose.Schema(
       ref: "Firm",
       required: true,
     },
-    takeProfit: {
+    tp: {
       type: Number,
       required: true,
     },
