@@ -12,7 +12,7 @@ const addressSchema = {
     trim: true,
     required: true,
   },
-  region: {
+  locality: {
     type: String,
     trim: true,
     required: true,
