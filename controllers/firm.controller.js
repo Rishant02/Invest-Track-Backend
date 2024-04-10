@@ -12,22 +12,47 @@ const Interaction = require("../models/interaction.model");
 // @access  Private
 module.exports.getFirms = asyncHandler(async (req, res, next) => {
   try {
-    const { firmType, perPage, page } = req.query;
+    const {
+      firmType,
+      perPage,
+      page,
+      name,
+      locationType,
+      sectors,
+      localities,
+      isActive,
+    } = req.query;
     if (!firmType) {
       throw new AppError("Please provide a firmType", 400);
     }
-    let query = Firm.find({ firmType })
-      .sort({ createdAt: -1 })
-      .populate("members", "name email designation memberType createdAt")
-      .lean();
+
+    let query = Firm.find({ firmType });
+
+    if (name) query = query.find({ name: { $regex: name, $options: "i" } });
+    if (locationType) query = query.find({ locationType });
+
+    if (sectors) {
+      const sectorsArray = sectors.split(","); // Split the string into an array
+      query = query.find({ sectors: { $in: sectorsArray } });
+    }
+
+    if (localities) {
+      const localitiesArray = localities.split(","); // Split the string into an array
+      query = query.find({ "address.locality": { $in: localitiesArray } });
+    }
+
+    if (isActive !== undefined) query = query.find({ isActive });
+
     if (page && perPage) {
       const currentPage = parseInt(page);
       const pageSize = parseInt(perPage);
       const skip = (currentPage - 1) * pageSize;
       query = query.skip(skip).limit(pageSize);
     }
+
     const firms = await query.exec();
     const totalCount = await Firm.countDocuments({ firmType });
+
     return res.status(200).json({
       success: true,
       data: firms,
