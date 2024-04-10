@@ -4,7 +4,7 @@ const addressSchema = require("./address.schema");
 
 const phoneNumberSchema = new mongoose.Schema(
   {
-    countryCode: {
+    dialCode: {
       type: String,
       trim: true,
       validate: {
