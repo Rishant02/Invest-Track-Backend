@@ -68,8 +68,13 @@ module.exports.getFirms = asyncHandler(async (req, res, next) => {
 // @access  Private
 module.exports.getFirm = asyncHandler(async (req, res, next) => {
   try {
-    // TODO: populate members after model init
-    const firm = await Firm.findById(req.params.id).lean();
+    const firm = await Firm.findById(req.params.id)
+      .populate(
+        "members",
+        "name,email,designation,comment,mobileNumber,officeNumber"
+      )
+      .populate("coverages", "-buffer")
+      .lean();
     if (!firm) {
       throw new AppError("Firm not found", 404);
     }

@@ -9,16 +9,18 @@ const {
   deleteCoverage,
   getCoverage,
   updateCoverage,
+  getCoverages,
 } = require("../controllers/coverage.controller");
 
 router
   .get("/:brokerId", isAuthenticated, isAdmin, getAllCoverages)
+  .post("/", isAuthenticated, isAdmin, getCoverages)
   .post(
     "/:brokerId",
     isAuthenticated,
     isAdmin,
     upload.single("coverage"),
-    uploadFile(false),
+    uploadFile(true),
     createCoverage
   )
   .get("/:brokerId/:id", isAuthenticated, isAdmin, getCoverage)

@@ -4,6 +4,21 @@ const { Broker } = require("../models/firm.model");
 const asyncHandler = require("express-async-handler");
 const File = require("../models/file.model");
 
+// @desc    Get coverages by brokers
+// @route   GET /api/coverages
+// @access  Private
+module.exports.getCoverages = asyncHandler(async (req, res, next) => {
+  try {
+    const coverages = await Coverage.find({ firm: { $in: req.body.brokers } })
+      .populate("firm", "name")
+      .populate("coverageFile", "-buffer")
+      .lean();
+    return res.status(200).json({ success: true, data: coverages });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // @desc    Get all coverages
 // @route   GET /api/coverages/:brokerId
 // @access  Private
