@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const helmet = require("helmet");
+const sanitizer = require("perfect-express-sanitizer");
 const ErrorHandler = require("./middleware/ErrorHandler"); // Error Middleware
 const port = process.env.PORT || 5000;
 
@@ -11,9 +12,16 @@ const app = express();
 
 // required middlewares
 app.use(helmet());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({ origin: true, credentials: true }));
+app.use(
+  sanitizer.clean({
+    xss: true,
+    noSql: true,
+    sql: true,
+  })
+);
 
 // API Routes
 app.get("/api", (req, res) => {
