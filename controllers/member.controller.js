@@ -57,26 +57,22 @@ module.exports.getAllMembers = asyncHandler(async (req, res, next) => {
 // @access  Private
 module.exports.createMember = asyncHandler(async (req, res, next) => {
   try {
-    const { firmId } = req.query;
-    if (!firmId) {
-      throw new AppError("Please provide a firmId", 400);
-    }
-    const firm = await Firm.findById(firmId);
-    if (!firm) {
+    const { type, firm, ...rest } = req.body;
+    const firmData = await Firm.findById(firmId);
+    if (!firmData) {
       throw new AppError("Firm not found", 404);
     }
-    const { type, ...rest } = req.body;
     let member;
     switch (type) {
       case "broker":
         member = new BrokerMember({
-          firm: firm._id,
+          firm: firmData._id,
           ...rest,
         });
         break;
       case "investor":
         member = new InvestorMember({
-          firm: firm._id,
+          firm: firmData._id,
           ...rest,
         });
         break;
@@ -84,11 +80,11 @@ module.exports.createMember = asyncHandler(async (req, res, next) => {
         throw new AppError("Invalid member type", 400);
     }
     member.firmHistory.push({
-      firm: firm._id,
+      firm: firmData._id,
     });
     const file = req.uploadedFile;
     if (file) {
-      file.firmId = firm._id;
+      file.firmId = firmData._id;
       file.member = member._id;
       member.businessCard = file._id;
     }
@@ -102,7 +98,7 @@ module.exports.createMember = asyncHandler(async (req, res, next) => {
     return res.status(201).json({
       success: true,
       data: member,
-      message: `Member with name ${member.name} created successfully for ${firm.name}`,
+      message: `Member with name ${member.name} created successfully for ${firmData.name}`,
     });
   } catch (err) {
     next(err);

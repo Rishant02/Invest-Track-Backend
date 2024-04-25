@@ -4,25 +4,27 @@ const addressSchema = require("./address.schema");
 
 const phoneNumberSchema = new mongoose.Schema(
   {
-    dialCode: {
+    areaCode: {
       type: String,
       trim: true,
-      validate: {
-        validator: validator.isISO31661Alpha2,
-        message: "Please enter a valid country code",
-      },
     },
-    number: {
+    countryCode: {
+      type: Number,
+    },
+    phoneNumber: {
       type: String,
       trim: true,
-      validate: {
-        validator: (value) =>
-          validator.isMobilePhone(value, "any", { strictMode: false }),
-        message: "Please enter a valid mobile number",
-      },
+    },
+    isoCode: {
+      type: String,
+      trim: true,
     },
   },
   { _id: false }
+);
+phoneNumberSchema.index(
+  { countryCode: 1, phoneNumber: 1, areaCode: 1 },
+  { unique: true }
 );
 
 const memberSchema = new mongoose.Schema(
@@ -116,7 +118,7 @@ const investorPersonSchema = new mongoose.Schema({
       required: true,
     },
   },
-  regionFocus: {
+  regionalFocus: {
     type: [String],
     trim: true,
     required: true,

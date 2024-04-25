@@ -3,7 +3,8 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const helmet = require("helmet");
-const sanitizer = require("perfect-express-sanitizer");
+const { rateLimit } = require("express-rate-limit");
+
 const ErrorHandler = require("./middleware/ErrorHandler"); // Error Middleware
 const port = process.env.PORT || 5000;
 
@@ -16,10 +17,11 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
-  sanitizer.clean({
-    xss: true,
-    noSql: true,
-    sql: true,
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 100,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
   })
 );
 

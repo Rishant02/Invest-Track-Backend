@@ -19,6 +19,8 @@ module.exports.getFirms = asyncHandler(async (req, res, next) => {
       name,
       locationType,
       sectors,
+      regionalSectors,
+      regionalFocus,
       localities,
       isActive,
     } = req.query;
@@ -39,6 +41,14 @@ module.exports.getFirms = asyncHandler(async (req, res, next) => {
     if (localities) {
       const localitiesArray = localities.split(","); // Split the string into an array
       query = query.find({ "address.locality": { $in: localitiesArray } });
+    }
+    if (regionalSectors) {
+      const regionalSectorsArray = regionalSectors.split(","); // Split the string into an array
+      query = query.find({ regionalSectors: { $in: regionalSectorsArray } });
+    }
+    if (regionalFocus) {
+      const regionalFocusArray = regionalFocus.split(","); // Split the string into an array
+      query = query.find({ regionalFocus: { $in: regionalFocusArray } });
     }
 
     if (isActive !== undefined) query = query.find({ isActive });
@@ -74,6 +84,7 @@ module.exports.getFirm = asyncHandler(async (req, res, next) => {
         "name,email,designation,comment,mobileNumber,officeNumber"
       )
       .populate("coverages", "-buffer")
+      .populate("fundFactsheets.file", "-buffer")
       .lean();
     if (!firm) {
       throw new AppError("Firm not found", 404);
@@ -187,7 +198,7 @@ module.exports.getFundSheets = asyncHandler(async (req, res, next) => {
     const { id: firmId } = req.params;
     const fundFactsheets = await Investor.findById(firmId)
       ?.select("fundFactsheets -_id")
-      ?.populate("fundFactsheets", "-buffer")
+      ?.populate("fundFactsheets.file", "-buffer")
       ?.lean();
     if (!fundFactsheets) {
       throw new AppError("Firm not found", 404);
@@ -211,9 +222,10 @@ module.exports.uploadFundSheet = asyncHandler(async (req, res, next) => {
     if (!investor) {
       throw new AppError("Firm not found", 404);
     }
+    const { documentDate } = req.body;
     const file = req.uploadedFile;
     await Investor.findByIdAndUpdate(firmId, {
-      $addToSet: { fundFactsheets: file._id },
+      $addToSet: { fundFactsheets: { documentDate, file: file._id } },
     });
     await file.save();
     res.status(201).json({
@@ -241,7 +253,7 @@ module.exports.deleteFundSheet = asyncHandler(async (req, res, next) => {
     }
     await File.findByIdAndDelete(sheetId);
     await Investor.findByIdAndUpdate(firmId, {
-      $pull: { fundFactsheets: sheetId },
+      $pull: { fundFactsheets: { file: file._id } },
     });
     res.status(200).json({
       success: true,

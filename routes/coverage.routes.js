@@ -4,17 +4,16 @@ const isAdmin = require("../middleware/isAdmin");
 const upload = require("../config/multerUpload");
 const uploadFile = require("../middleware/uploadFile");
 const {
-  getAllCoverages,
+  getCoveragesByBroker,
   createCoverage,
   deleteCoverage,
   getCoverage,
   updateCoverage,
-  getCoverages,
 } = require("../controllers/coverage.controller");
 
 router
-  .get("/:brokerId", isAuthenticated, isAdmin, getAllCoverages)
-  .post("/", isAuthenticated, isAdmin, getCoverages)
+  .get("/:brokerId", isAuthenticated, isAdmin, getCoveragesByBroker)
+  // .get("/", isAuthenticated, isAdmin, getCoverages)
   .post(
     "/:brokerId",
     isAuthenticated,

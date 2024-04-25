@@ -64,7 +64,7 @@ const InvestorSchema = new mongoose.Schema({
       message: "Please select at least one sector",
     },
   },
-  regionSectors: {
+  regionalSectors: {
     type: [String],
     trim: true,
     required: true,
@@ -75,7 +75,7 @@ const InvestorSchema = new mongoose.Schema({
       message: "Please select at least one sector",
     },
   },
-  regionFocus: {
+  regionalFocus: {
     type: [String],
     trim: true,
     required: true,
@@ -95,7 +95,19 @@ const InvestorSchema = new mongoose.Schema({
       required: true,
     },
   },
-  fundFactsheets: [{ type: mongoose.Schema.Types.ObjectId, ref: "File" }],
+  fundFactsheets: [
+    {
+      documentDate: {
+        type: Date,
+        default: Date.now,
+      },
+      file: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "File",
+      },
+      _id: false,
+    },
+  ],
 });
 
 // Define models based on schemas
