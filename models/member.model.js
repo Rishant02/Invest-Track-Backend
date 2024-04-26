@@ -8,9 +8,6 @@ const phoneNumberSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    countryCode: {
-      type: Number,
-    },
     phoneNumber: {
       type: String,
       trim: true,
@@ -19,14 +16,16 @@ const phoneNumberSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    countryCode: {
+      type: Number,
+    },
   },
   { _id: false }
 );
 phoneNumberSchema.index(
-  { countryCode: 1, phoneNumber: 1, areaCode: 1 },
+  { countryCode: 1, areaCode: 1, phoneNumber: 1 },
   { unique: true }
 );
-
 const memberSchema = new mongoose.Schema(
   {
     name: {
@@ -64,8 +63,14 @@ const memberSchema = new mongoose.Schema(
       trim: true,
       required: true,
     },
-    mobileNumber: phoneNumberSchema,
-    officeNumber: phoneNumberSchema,
+    mobileNumber: {
+      type: phoneNumberSchema,
+      required: true,
+    },
+    officeNumber: {
+      type: phoneNumberSchema,
+      required: false,
+    },
     address: addressSchema,
     businessCard: {
       type: mongoose.Schema.Types.ObjectId,

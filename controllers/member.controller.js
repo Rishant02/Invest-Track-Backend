@@ -58,7 +58,7 @@ module.exports.getAllMembers = asyncHandler(async (req, res, next) => {
 module.exports.createMember = asyncHandler(async (req, res, next) => {
   try {
     const { type, firm, ...rest } = req.body;
-    const firmData = await Firm.findById(firmId);
+    const firmData = await Firm.findById(firm);
     if (!firmData) {
       throw new AppError("Firm not found", 404);
     }
