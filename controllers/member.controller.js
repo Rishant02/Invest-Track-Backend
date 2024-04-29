@@ -9,43 +9,47 @@ const {
   Member,
 } = require("../models/member.model");
 const Interaction = require("../models/interaction.model");
-const Coverage = require("../models/coverage.model");
 
 // @desc    Get all members
 // @route   GET /api/members
 // @access  Private
 module.exports.getAllMembers = asyncHandler(async (req, res, next) => {
   try {
-    const { memberType, perPage, page } = req.query;
-    let query;
-    switch (memberType) {
-      case "broker":
-        query = BrokerMember.find()
-          .sort({ createdAt: -1 })
-          .populate("firm")
-          .lean();
-        break;
-      case "investor":
-        query = InvestorMember.find()
-          .sort({ createdAt: -1 })
-          .populate("firm")
-          .lean();
-        break;
-      default:
-        throw new AppError("Invalid member type", 400);
+    const { memberType, name, designation, isGift, sectors, perPage, page } =
+      req.query;
+
+    // Check if any query parameter exists
+    const hasQueryParams =
+      memberType ||
+      name ||
+      designation ||
+      sectors ||
+      isGift !== undefined ||
+      perPage ||
+      page;
+
+    let query = Member.find();
+
+    if (hasQueryParams) {
+      if (memberType) query = query.find({ memberType });
+      if (name) query = query.find({ name: { $regex: name, $options: "i" } });
+      if (designation)
+        query = query.find({ designation: { $in: designation.split(",") } });
+      if (sectors) query = query.find({ sectors: { $in: sectors.split(",") } });
+      if (isGift !== undefined) query = query.find({ isGift });
+      if (page && perPage) {
+        const currentPage = parseInt(page);
+        const pageSize = parseInt(perPage);
+        const skip = (currentPage - 1) * pageSize;
+        query = query.skip(skip).limit(pageSize);
+      }
     }
-    if (page && perPage) {
-      const currentPage = parseInt(page);
-      const pageSize = parseInt(perPage);
-      const skip = (currentPage - 1) * pageSize;
-      query = query.skip(skip).limit(pageSize);
-    }
-    const members = await query.exec();
-    const totalCount = await Member.countDocuments({ memberType });
+
+    const members = await query.populate("firm").exec();
     return res.status(200).json({
       success: true,
       data: members,
-      totalCount,
+      totalCount: members.length,
     });
   } catch (err) {
     next(err);
@@ -129,7 +133,9 @@ module.exports.getMembersByFirm = asyncHandler(async (req, res, next) => {
 // @access  Private
 module.exports.getMember = asyncHandler(async (req, res, next) => {
   try {
-    const member = await Member.findById(req.params.id);
+    const member = await Member.findById(req.params.id)
+      .populate("firm")
+      .populate("firmHistory.firm");
     if (!member) {
       throw new AppError("Member not found", 404);
     }
