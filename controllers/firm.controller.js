@@ -4,8 +4,6 @@ const Coverage = require("../models/coverage.model");
 const User = require("../models/user.model");
 const AppError = require("../middleware/AppError");
 const File = require("../models/file.model");
-// const { Member } = require("../models/member.model");
-const Interaction = require("../models/interaction.model");
 
 // @desc    Get all firms by firmType
 // @route   GET /api/firms
@@ -61,12 +59,11 @@ module.exports.getFirms = asyncHandler(async (req, res, next) => {
     }
 
     const firms = await query.exec();
-    const totalCount = await Firm.countDocuments({ firmType });
 
     return res.status(200).json({
       success: true,
       data: firms,
-      totalCount,
+      totalCount: firms.length,
     });
   } catch (err) {
     next(err);
