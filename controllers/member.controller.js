@@ -118,7 +118,7 @@ module.exports.getMembersByFirm = asyncHandler(async (req, res, next) => {
     if (!firm) {
       throw new AppError("Firm not found", 404);
     }
-    const members = await Member.find({ firm: firm._id });
+    const members = await Member.find({ firm: firm._id }).populate("firm");
     return res.status(200).json({
       success: true,
       data: members,
@@ -154,7 +154,6 @@ module.exports.getMember = asyncHandler(async (req, res, next) => {
 module.exports.updateMember = asyncHandler(async (req, res, next) => {
   const { memberType, ...rest } = req.body;
   const MemberModel = memberType === "broker" ? BrokerMember : InvestorMember;
-  console.log(memberType);
   try {
     // Find the member by ID and update it
     let member = await MemberModel.findById(req.params.id);
