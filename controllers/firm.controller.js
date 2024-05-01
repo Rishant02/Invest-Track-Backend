@@ -22,42 +22,46 @@ module.exports.getFirms = asyncHandler(async (req, res, next) => {
       localities,
       isActive,
     } = req.query;
-    if (!firmType) {
-      throw new AppError("Please provide a firmType", 400);
+
+    let query = Firm.find();
+
+    const hasQueryParams =
+      firmType ||
+      perPage ||
+      page ||
+      name ||
+      locationType ||
+      sectors ||
+      regionalSectors ||
+      regionalFocus ||
+      localities ||
+      isActive !== undefined;
+
+    if (hasQueryParams) {
+      if (firmType) query = query.find({ firmType });
+      if (name) query = query.find({ name: { $regex: name, $options: "i" } });
+      if (locationType) query = query.find({ locationType });
+      if (sectors) query = query.find({ sectors: { $in: sectors.split(",") } });
+      if (localities)
+        query = query.find({
+          "address.locality": { $in: localities.split(",") },
+        });
+      if (regionalSectors)
+        query = query.find({
+          regionalSectors: { $in: regionalSectors.split(",") },
+        });
+      if (regionalFocus)
+        query = query.find({
+          regionalFocus: { $in: regionalFocus.split(",") },
+        });
+      if (isActive !== undefined) query = query.find({ isActive });
+      if (page && perPage) {
+        const currentPage = parseInt(page);
+        const pageSize = parseInt(perPage);
+        const skip = (currentPage - 1) * pageSize;
+        query = query.skip(skip).limit(pageSize);
+      }
     }
-
-    let query = Firm.find({ firmType });
-
-    if (name) query = query.find({ name: { $regex: name, $options: "i" } });
-    if (locationType) query = query.find({ locationType });
-
-    if (sectors) {
-      const sectorsArray = sectors.split(","); // Split the string into an array
-      query = query.find({ sectors: { $in: sectorsArray } });
-    }
-
-    if (localities) {
-      const localitiesArray = localities.split(","); // Split the string into an array
-      query = query.find({ "address.locality": { $in: localitiesArray } });
-    }
-    if (regionalSectors) {
-      const regionalSectorsArray = regionalSectors.split(","); // Split the string into an array
-      query = query.find({ regionalSectors: { $in: regionalSectorsArray } });
-    }
-    if (regionalFocus) {
-      const regionalFocusArray = regionalFocus.split(","); // Split the string into an array
-      query = query.find({ regionalFocus: { $in: regionalFocusArray } });
-    }
-
-    if (isActive !== undefined) query = query.find({ isActive });
-
-    if (page && perPage) {
-      const currentPage = parseInt(page);
-      const pageSize = parseInt(perPage);
-      const skip = (currentPage - 1) * pageSize;
-      query = query.skip(skip).limit(pageSize);
-    }
-
     const firms = await query.exec();
 
     return res.status(200).json({
