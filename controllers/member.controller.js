@@ -15,14 +15,23 @@ const Interaction = require("../models/interaction.model");
 // @access  Private
 module.exports.getAllMembers = asyncHandler(async (req, res, next) => {
   try {
-    const { memberType, name, designation, isGift, sectors, perPage, page } =
-      req.query;
+    const {
+      memberType,
+      name,
+      designation,
+      isGift,
+      sectors,
+      localities,
+      perPage,
+      page,
+    } = req.query;
 
     // Check if any query parameter exists
     const hasQueryParams =
       memberType ||
       name ||
       designation ||
+      localities ||
       sectors ||
       isGift !== undefined ||
       perPage ||
@@ -36,6 +45,10 @@ module.exports.getAllMembers = asyncHandler(async (req, res, next) => {
       if (designation)
         query = query.find({ designation: { $in: designation.split(",") } });
       if (sectors) query = query.find({ sectors: { $in: sectors.split(",") } });
+      if (localities)
+        query = query.find({
+          "address.locality": { $in: localities.split(",") },
+        });
       if (isGift !== undefined) query = query.find({ isGift });
       if (page && perPage) {
         const currentPage = parseInt(page);
@@ -193,7 +206,9 @@ module.exports.updateMember = asyncHandler(async (req, res, next) => {
 // @access  Private
 module.exports.deleteMember = asyncHandler(async (req, res, next) => {
   try {
-    const member = await Member.findByIdAndDelete(req.params.id);
+    const member = await Member.findByIdAndDelete(req.params.id).populate(
+      "firm"
+    );
     if (!member) {
       throw new AppError("Member not found", 404);
     }
