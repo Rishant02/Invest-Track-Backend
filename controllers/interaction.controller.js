@@ -56,6 +56,7 @@ module.exports.updateInteraction = asyncHandler(async (req, res, next) => {
       throw new AppError("Interaction not found", 404);
     }
     return res.status(200).json({
+      message: "Interaction updated successfully",
       success: true,
       data: interaction,
     });
