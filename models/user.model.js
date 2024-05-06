@@ -26,10 +26,6 @@ const userSchema = new mongoose.Schema({
     enum: ["admin", "member"],
     default: "member",
   },
-  uniquePasswordToken: { type: String },
-  isPasswordOTPVerified: { type: Boolean },
-  passwordResetToken: { type: String },
-  passwordResetTokenExpiry: { type: Date },
   avatar: {
     type: String,
     default: "https://cdn-icons-png.flaticon.com/512/149/149071.png",

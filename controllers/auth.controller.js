@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const User = require("../models/user.model");
+const Token = require("../models/token.model");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
@@ -8,10 +9,6 @@ const AppError = require("../middleware/AppError");
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-};
-
-const generateOtp = () => {
-  return crypto.randomInt(0, 1000000).toString().padStart(6, "0");
 };
 
 const passwordRegex =
@@ -138,61 +135,41 @@ module.exports.forgotPassword = asyncHandler(async (req, res, next) => {
       throw new AppError("Please provide email", 400);
     }
     const user = await User.findOne({ email });
-    if (!user) {
-      throw new AppError("User not found", 404);
-    }
-    user.uniquePasswordToken = crypto.randomBytes(32).toString("hex");
-    user.passwordResetToken = generateOtp();
-    user.passwordResetTokenExpiry = Date.now() + 30 * 60 * 1000;
-    user.isPasswordOTPVerified = false;
-    await user.save();
-    const mailInfo = await sendMail(
+    if (!user) throw new AppError("User not found", 404);
+    const token = await Token.findOne({ userId: user._id });
+    if (token) await token.deleteOne();
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const hash = await bcrypt.hash(resetToken, 10);
+    await new Token({
+      userId: user._id,
+      token: hash,
+      createdAt: Date.now(),
+    }).save();
+    const resetUrl = `${process.env.CLIENT_URL}/auth/password-reset?token=${resetToken}&id=${user._id}`;
+    const info = await sendMail(
       user.email,
-      "Reset Password | InvestTrack",
-      `Your Reset Password OTP is <b>${user.passwordResetToken}<br><br>Cheers,<br>InvestTrack</b>`
+      "Password Reset Request - ITrack",
+      `Hi <b>${user.name}</b>,
+      <br><br>
+      Please click on the link below to reset your password
+      <br>
+      <a href=${resetUrl}>Click here</a>
+      <br><br>
+      <b>Cheers</b>
+      <br>
+      <b>ITrack</b>
+      `
     );
-    console.log("Mail Sent:", mailInfo.response);
-    return res.status(200).json({
-      success: true,
-      uniquePasswordToken: user.uniquePasswordToken,
-      messsage: `6 digit OTP has been sent to your email ${user.email}. OTP will expire in 30 minutes.`,
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// @desc    Verify OTP
-// @route   POST /api/auth/verify-otp
-// @access  Public
-module.exports.verifyOtp = asyncHandler(async (req, res, next) => {
-  try {
-    const { resetToken } = req.query;
-    if (!resetToken) {
-      throw new AppError("Please provide reset token", 400);
-    }
-    const user = await User.findOne({ uniquePasswordToken: resetToken });
-    if (!user) {
-      throw new AppError("User not found", 404);
-    }
-    if (user.passwordResetTokenExpiry < Date.now()) {
-      user.uniquePasswordToken = undefined;
-      user.passwordResetToken = undefined;
-      user.isPasswordOTPVerified = undefined;
-      user.passwordResetTokenExpiry = undefined;
-      await user.save();
-      throw new AppError("OTP expired. Please request for new OTP", 401);
-    }
-    if (user.passwordResetToken === req.body.otp) {
-      user.isPasswordOTPVerified = true;
-      user.passwordResetToken = undefined;
-      await user.save();
+    if (info.response) {
       return res.status(200).json({
         success: true,
-        message: "OTP verified successfully! Please reset your password",
+        message: "Password reset link has been sent to your email",
       });
     }
-    throw new AppError("Invalid OTP", 401);
+    throw new AppError("Something went wrong. Please try again later", 500);
+    // const resetUrl = `${req.protocol}://${req.get(
+    //   "host"
+    // )}/api/auth/reset-password?resetToken=${resetToken}`;
   } catch (err) {
     next(err);
   }
@@ -200,53 +177,42 @@ module.exports.verifyOtp = asyncHandler(async (req, res, next) => {
 
 // @desc    Reset password
 // @route   POST /api/auth/reset-password
-// @access  Private
+// @access  Public
 module.exports.resetPassword = asyncHandler(async (req, res, next) => {
   try {
-    const { resetToken } = req.query;
-    const { password, confirmPassword } = req.body;
-    if (!resetToken) {
-      throw new AppError("Please provide reset token", 400);
-    }
-    if (!password || !confirmPassword) {
-      throw new AppError(
-        "Please provide new password and confirm password",
-        400
-      );
-    }
-    if (password !== confirmPassword) {
-      throw new AppError("Passwords do not match", 401);
-    }
-    const user = await User.findOne({ uniquePasswordToken: resetToken });
-    if (!user) {
-      throw new AppError("User not found", 404);
-    }
-    if (!user.isPasswordOTPVerified) {
-      throw new AppError("Please verify OTP first", 401);
-    }
-    if (user.passwordResetTokenExpiry < Date.now()) {
-      user.uniquePasswordToken = undefined;
-      user.passwordResetToken = undefined;
-      user.isPasswordOTPVerified = undefined;
-      user.passwordResetTokenExpiry = undefined;
-      await user.save();
-      throw new AppError("OTP expired. Please request for new OTP", 401);
-    }
-    if (!passwordRegex.test(password)) {
+    const { userId, token, password } = req.body;
+    if (!userId) throw new AppError("Please provide user id", 400);
+    const user = await User.findById(userId);
+    if (!user) throw new AppError("User not found", 404);
+    if (!token) throw new AppError("Please provide token", 400);
+    if (!password) throw new AppError("Please provide password", 400);
+    const passwordResetToken = await Token.findOne({ userId });
+    if (!passwordResetToken)
+      throw new AppError("Invalid or expired password reset token");
+    const isValid = await bcrypt.compare(token, passwordResetToken.token);
+    if (!isValid) throw new AppError("Invalid or expired password reset token");
+    if (!passwordRegex.test(password))
       throw new AppError(
         "Password must contain at least one uppercase letter, one lowercase letter, one number, one special character and must be at least 8 characters long",
-        401
+        400
       );
-    }
     user.password = password;
-    user.uniquePasswordToken = undefined;
-    user.passwordResetToken = undefined;
-    user.isPasswordOTPVerified = undefined;
-    user.passwordResetTokenExpiry = undefined;
     await user.save();
+    await sendMail(
+      user.email,
+      "Password Reset Successful - ITrack",
+      `Hi <b>${user.name}</b>,
+      <br><br>
+      Your password has been successfully reset.
+      <br><br>
+      <b>Cheers</b>
+      <br>
+      <b>ITrack</b>
+      `
+    );
     return res.status(200).json({
       success: true,
-      message: "Password has been reset. Please login with new password",
+      message: "Password has been reset. Please login with your new password",
     });
   } catch (err) {
     next(err);
