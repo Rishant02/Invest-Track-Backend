@@ -145,7 +145,7 @@ module.exports.forgotPassword = asyncHandler(async (req, res, next) => {
       token: hash,
       createdAt: Date.now(),
     }).save();
-    const resetUrl = `${process.env.CLIENT_URL}/auth/password-reset?token=${resetToken}&id=${user._id}`;
+    const resetUrl = `${process.env.CLIENT_URL}/auth/reset-password?token=${resetToken}&id=${user._id}`;
     const info = await sendMail(
       user.email,
       "Password Reset Request - ITrack",
@@ -198,6 +198,7 @@ module.exports.resetPassword = asyncHandler(async (req, res, next) => {
       );
     user.password = password;
     await user.save();
+    await passwordResetToken.deleteOne();
     await sendMail(
       user.email,
       "Password Reset Successful - ITrack",
