@@ -154,6 +154,8 @@ module.exports.forgotPassword = asyncHandler(async (req, res, next) => {
       Please click on the link below to reset your password
       <br>
       <a href=${resetUrl}>Click here</a>
+      <br>
+      (Please note that the link will expire in 1 hour)
       <br><br>
       <b>Cheers</b>
       <br>
@@ -163,7 +165,8 @@ module.exports.forgotPassword = asyncHandler(async (req, res, next) => {
     if (info.response) {
       return res.status(200).json({
         success: true,
-        message: "Password reset link has been sent to your email",
+        message:
+          "Password reset link has been sent to your email. Link will expire in 1 hour",
       });
     }
     throw new AppError("Something went wrong. Please try again later", 500);
