@@ -34,7 +34,7 @@ router
     updateMember
   )
   .delete("/:id", isAuthenticated, isAdmin, deleteMember)
-  .post("/:id/move", isAuthenticated, isAdmin, moveMember)
+  .put("/:id/move", isAuthenticated, isAdmin, moveMember)
   .get("/firm/:firmId", isAuthenticated, isAdmin, getMembersByFirm);
 
 module.exports = router;

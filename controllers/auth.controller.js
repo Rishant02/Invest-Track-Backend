@@ -154,7 +154,7 @@ module.exports.forgotPassword = asyncHandler(async (req, res, next) => {
       Please click on the link below to reset your password
       <br>
       <a href=${resetUrl}>Click here</a>
-      <br>
+      <br><br>
       (Please note that the link will expire in 1 hour)
       <br><br>
       <b>Cheers</b>

@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const asyncHandler = require("express-async-handler");
 const { Firm } = require("../models/firm.model");
 const File = require("../models/file.model");
+const capitalize = require("../utils/capitalize");
 const {
   BrokerMember,
   InvestorMember,
@@ -234,7 +235,7 @@ module.exports.deleteMember = asyncHandler(async (req, res, next) => {
 module.exports.moveMember = asyncHandler(async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { targetFirmId, targetMemberType, ...rest } = req.body;
+    const { targetFirmId, ...rest } = req.body;
     const targetFirm = await Firm.findById(targetFirmId);
     if (!targetFirm) {
       throw new AppError("Target firm not found", 404);
@@ -246,6 +247,7 @@ module.exports.moveMember = asyncHandler(async (req, res, next) => {
     if (member.firm.toString() === targetFirmId) {
       throw new AppError("Member already in target firm", 400);
     }
+    const targetMemberType = `${capitalize(targetFirm.firmType)}Member`;
     const targetMemberModel =
       targetMemberType === "BrokerMember" ? BrokerMember : InvestorMember;
     const updatedMember = new targetMemberModel({
