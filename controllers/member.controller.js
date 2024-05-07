@@ -247,6 +247,9 @@ module.exports.moveMember = asyncHandler(async (req, res, next) => {
     if (!newFirm) {
       throw new AppError("Firm not found", 404);
     }
+    if (member.firm.toString() === newFirm._id.toString()) {
+      throw new AppError("Member is already in the same firm", 400);
+    }
     await Firm.findByIdAndUpdate(member.firm, {
       $pull: {
         members: member._id,
