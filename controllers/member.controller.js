@@ -234,57 +234,51 @@ module.exports.deleteMember = asyncHandler(async (req, res, next) => {
 // @access  Private
 module.exports.moveMember = asyncHandler(async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const { targetFirmId, ...rest } = req.body;
-    const targetFirm = await Firm.findById(targetFirmId);
-    if (!targetFirm) {
-      throw new AppError("Target firm not found", 404);
-    }
-    const member = await Member.findById(id);
+    const member = await Member.findById(req.params.id);
     if (!member) {
       throw new AppError("Member not found", 404);
     }
-    if (member.firm.toString() === targetFirmId) {
-      throw new AppError("Member already in target firm", 400);
+    // return res.status(200).json({ member });
+    const { firm } = req.body;
+    if (!firm) {
+      throw new AppError("Firm not found", 404);
     }
-    const targetMemberType = `${capitalize(targetFirm.firmType)}Member`;
-    const targetMemberModel =
-      targetMemberType === "BrokerMember" ? BrokerMember : InvestorMember;
-    const updatedMember = new targetMemberModel({
-      ...member.toObject(),
-      _id: new mongoose.Types.ObjectId(),
-      firm: targetFirmId,
-      memberType: targetMemberType,
-    });
-    updatedMember.firmHistory.push({
-      firm: targetFirmId,
-    });
-    updatedMember.set(rest);
-    await updatedMember.save();
-    await Member.findByIdAndDelete(id);
-    await Interaction.updateMany(
-      { member: member._id },
-      { member: updatedMember._id }
-    );
-    await File.findByIdAndUpdate(member.businessCard, {
-      member: updatedMember._id,
-    });
-    // remove member from old firm
+    const newFirm = await Firm.findById(firm);
+    if (!newFirm) {
+      throw new AppError("Firm not found", 404);
+    }
     await Firm.findByIdAndUpdate(member.firm, {
       $pull: {
         members: member._id,
       },
     });
-    // add member to new firm
-    await Firm.findByIdAndUpdate(targetFirmId, {
+    await Firm.findByIdAndUpdate(newFirm._id, {
       $addToSet: {
-        members: updatedMember._id,
+        members: member._id,
       },
     });
+    const updatedMember = await Member.findByIdAndUpdate(
+      member._id,
+      {
+        memberType:
+          newFirm.firmType === "investor" ? "InvestorMember" : "BrokerMember",
+        firm: newFirm._id,
+        $push: {
+          firmHistory: {
+            firm: newFirm._id,
+          },
+        },
+      },
+      {
+        overwriteDiscriminatorKey: true,
+        runValidators: true,
+        new: true,
+      }
+    );
     return res.status(200).json({
       success: true,
+      message: `${member.name} has been successfully moved to ${newFirm.name}`,
       data: updatedMember,
-      message: `Member with name ${member.name} moved successfully to ${targetFirm.name}`,
     });
   } catch (err) {
     next(err);
