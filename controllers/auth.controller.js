@@ -145,7 +145,11 @@ module.exports.forgotPassword = asyncHandler(async (req, res, next) => {
       token: hash,
       createdAt: Date.now(),
     }).save();
-    const resetUrl = `${process.env.CLIENT_URL}/auth/reset-password?token=${resetToken}&id=${user._id}`;
+    const baseUrl =
+      process.env.NODE_ENV === "production"
+        ? `${req.protocol}://${req.get("host")}`
+        : process.env.CLIENT_URL;
+    const resetUrl = `${baseUrl}/auth/reset-password?token=${resetToken}&id=${user._id}`;
     const info = await sendMail(
       user.email,
       "Password Reset Request - ITrack",

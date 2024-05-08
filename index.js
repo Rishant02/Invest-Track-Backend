@@ -1,4 +1,5 @@
 require("dotenv").config({ path: ".env" });
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
@@ -38,6 +39,10 @@ app.use("/api/members", require("./routes/member.routes"));
 app.use("/api/interactions", require("./routes/interaction.routes"));
 app.use("/api/files", require("./routes/file.routes"));
 app.use(ErrorHandler);
+app.use(express.static(path.join(__dirname, "dist")));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "dist", "index.html"));
+});
 
 // Listen to server
 app.listen(port, () => {
