@@ -13,7 +13,7 @@ connectDB();
 const app = express();
 
 // required middlewares
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
