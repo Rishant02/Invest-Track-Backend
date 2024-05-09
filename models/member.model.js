@@ -24,7 +24,7 @@ const phoneNumberSchema = new mongoose.Schema(
 );
 phoneNumberSchema.index(
   { countryCode: 1, areaCode: 1, phoneNumber: 1 },
-  { unique: true }
+  { unique: true, sparse: true, background: true }
 );
 const memberSchema = new mongoose.Schema(
   {
