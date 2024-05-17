@@ -4,7 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const helmet = require("helmet");
-const { rateLimit } = require("express-rate-limit");
+const rateLimit = require("express-rate-limit");
 
 const ErrorHandler = require("./middleware/ErrorHandler"); // Error Middleware
 const port = process.env.PORT || 5000;
@@ -13,16 +13,23 @@ connectDB();
 const app = express();
 
 // required middlewares
-// app.use(helmet());
+app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.set("trust proxy", 1);
 app.use(
+  "/api/",
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 100,
+    max: 500,
     standardHeaders: "draft-7",
     legacyHeaders: false,
+    message: "You have exceeded the 500 requests in 15 minutes limit!",
+    keyGenerator: (req) => {
+      return req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+    },
   })
 );
 
