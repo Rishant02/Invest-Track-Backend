@@ -10,9 +10,13 @@ module.exports.getFile = asyncHandler(async (req, res, next) => {
     if (!file) {
       throw new AppError("File not found", 404);
     }
+    const fileData = {
+      ...file.toObject(),
+      buffer: file.buffer.toString("base64"),
+    };
     return res.status(200).json({
       success: true,
-      data: file,
+      data: fileData,
     });
   } catch (err) {
     next(err);
