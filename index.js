@@ -13,15 +13,7 @@ connectDB();
 const app = express();
 
 // required middlewares
-app.use(helmet({ crossOriginEmbedderPolicy: false, originAgentCluster: true }));
-app.use(
-  helmet.contentSecurityPolicy({
-    useDefaults: true,
-    directives: {
-      "img-src": ["'self'", "https: data: blob:"],
-    },
-  })
-);
+app.use(helmet({ contentSecurityPolicy: false })); //TODO: Will remove this after changing user schema
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
