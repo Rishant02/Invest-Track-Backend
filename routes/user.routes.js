@@ -1,11 +1,19 @@
 const router = require("express").Router();
 const { getUser, updateUser } = require("../controllers/user.controller");
-const isAuhenticated = require("../middleware/isAuthenticated");
+const isAuthenticated = require("../middleware/isAuthenticated");
+const upload = require("../config/multerUpload");
+const uploadFile = require("../middleware/uploadFile");
 
 router
-  .get("/", isAuhenticated, getUser)
-  .put("/:id", isAuhenticated, updateUser)
-  .delete("/:id", (req, res) =>
+  .get("/", isAuthenticated, getUser)
+  .put(
+    "/",
+    isAuthenticated,
+    upload.single("avatar"),
+    uploadFile(false),
+    updateUser
+  )
+  .delete("/", (req, res) =>
     res.json({ message: "DELETE /api/users/:id is working" })
   );
 
