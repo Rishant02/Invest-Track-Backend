@@ -3,6 +3,7 @@ const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
+const compression = require("compression");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 
@@ -14,22 +15,8 @@ const app = express();
 
 // required middlewares
 app.use(helmet());
-app.use(helmet.crossOriginEmbedderPolicy({ policy: "credentialless" }));
-app.use(
-  helmet({
-    crossOriginEmbedderPolicy: false,
-    originAgentCluster: true,
-  })
-);
-app.use(
-  helmet.contentSecurityPolicy({
-    useDefaults: true,
-    directives: {
-      "img-src": ["'self'", "https:", "data:", "blob:"],
-    },
-  })
-);
 app.use(cors({ origin: true, credentials: true }));
+app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -41,7 +28,7 @@ app.use(
     max: 500,
     standardHeaders: "draft-7",
     legacyHeaders: false,
-    message: "You have exceeded the 500 requests in 15 minutes limit!",
+    message: "Too many requests from this IP, please try again in an hour!",
     keyGenerator: (req) => {
       return req.headers["x-forwarded-for"] || req.connection.remoteAddress;
     },
