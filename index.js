@@ -15,6 +15,14 @@ const app = express();
 
 // required middlewares
 app.use(helmet());
+app.use(
+  helmet.contentSecurityPolicy({
+    useDefaults: true,
+    directives: {
+      "img-src": ["'self'", "https: data: blob:"],
+    },
+  })
+);
 app.use(cors({ origin: true, credentials: true }));
 app.use(compression());
 app.use(express.json());
