@@ -18,12 +18,22 @@ const passwordRegex =
 // @access  Public
 module.exports.registerUser = asyncHandler(async (req, res, next) => {
   try {
-    const { name, email, password, role, avatar } = req.body;
+    const { name, email, password, role } = req.body;
     const isExistingUser = await User.findOne({ email });
     if (isExistingUser) {
       throw new AppError("User already exists", 401);
     }
-    const user = new User({ name, email, password, role, avatar });
+    if (!passwordRegex.test(password)) {
+      throw new AppError(
+        "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+        400
+      );
+    }
+    const userData = { name, email, password, role };
+    if (req.file && req.file.mimetype.includes("image")) {
+      userData.avatar = req.file.buffer;
+    }
+    const user = new User(userData);
     await user.save();
     user.password = undefined;
     return res.status(201).json({
@@ -58,10 +68,14 @@ module.exports.loginUser = asyncHandler(async (req, res, next) => {
     }
     const token = signToken(user._id);
     user.password = undefined;
+    const data = {
+      ...user,
+      avatar: user.avatar.toString("base64"),
+    };
     return res.status(200).json({
       success: true,
       message: `${user.name} has successfully logged in`,
-      user,
+      user: data,
       accessToken: token,
     });
   } catch (err) {

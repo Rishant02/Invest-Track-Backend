@@ -11,9 +11,13 @@ module.exports.getUser = asyncHandler(async (req, res, next) => {
     if (!user) {
       throw new AppError("User not found", 404);
     }
+    const data = {
+      ...user,
+      avatar: user.avatar.toString("base64"),
+    };
     return res.status(200).json({
       success: true,
-      data: user,
+      data,
     });
   } catch (err) {
     next(err);
@@ -25,6 +29,9 @@ module.exports.getUser = asyncHandler(async (req, res, next) => {
 // @access  Private
 module.exports.updateUser = asyncHandler(async (req, res, next) => {
   try {
+    if (req.file && req.file.mimetype.includes("image")) {
+      req.body.avatar = req.file.buffer;
+    }
     const user = await User.findByIdAndUpdate(req.userId, req.body, {
       new: true,
     })
@@ -35,7 +42,10 @@ module.exports.updateUser = asyncHandler(async (req, res, next) => {
     }
     return res.status(200).json({
       success: true,
-      data: user,
+      data: {
+        ...user,
+        avatar: user.avatar.toString("base64"),
+      },
     });
   } catch (err) {
     next(err);
