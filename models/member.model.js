@@ -77,7 +77,12 @@ const memberSchema = new mongoose.Schema(
       required: false,
     },
     address: addressSchema,
-    businessCard: {
+    businessCardFront: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "File",
+      required: false,
+    },
+    businessCardBack: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "File",
       required: false,

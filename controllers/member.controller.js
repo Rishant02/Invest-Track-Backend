@@ -76,44 +76,64 @@ module.exports.getAllMembers = asyncHandler(async (req, res, next) => {
 module.exports.createMember = asyncHandler(async (req, res, next) => {
   try {
     const { memberType, firm, ...rest } = req.body;
+
+    // Fetch the firm data
     const firmData = await Firm.findById(firm);
     if (!firmData) {
-      throw new AppError("Firm not found", 404);
+      return next(new AppError("Firm not found", 404));
     }
-    let member;
+
+    // Create a new member based on the member type
+    let MemberModel;
     switch (memberType) {
       case "broker":
-        member = new BrokerMember({
-          firm: firmData._id,
-          ...rest,
-        });
+        MemberModel = BrokerMember;
         break;
       case "investor":
-        member = new InvestorMember({
-          firm: firmData._id,
-          ...rest,
-        });
+        MemberModel = InvestorMember;
         break;
       default:
-        throw new AppError("Invalid member type", 400);
+        return next(new AppError("Invalid member type", 400));
     }
-    member.firmHistory.push({
+
+    const member = new MemberModel({
       firm: firmData._id,
+      ...rest,
+      firmHistory: [{ firm: firmData._id }],
     });
-    const file = req.uploadedFile;
-    if (file) {
-      file.firmId = firmData._id;
-      file.member = member._id;
-      member.businessCard = file._id;
+
+    // Helper function to handle file uploads
+    const handleFileUpload = async (file, fieldName) => {
+      if (file) {
+        const uploadedFile = new File({
+          firmId: firmData._id,
+          member: member._id,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          buffer: file.buffer,
+        });
+        member[fieldName] = uploadedFile._id;
+        await uploadedFile.save();
+      }
+    };
+
+    // Handle file uploads for businessCardFront and businessCardBack
+    if (req.files) {
+      await Promise.all([
+        handleFileUpload(req.files.businessCardFront?.[0], "businessCardFront"),
+        handleFileUpload(req.files.businessCardBack?.[0], "businessCardBack"),
+      ]);
     }
+    // Save the member
     await member.save();
+
+    // Update the firm's members list
     await Firm.findByIdAndUpdate(member.firm, {
-      $addToSet: {
-        members: member._id,
-      },
+      $addToSet: { members: member._id },
     });
-    await file?.save();
-    return res.status(201).json({
+
+    // Send response
+    res.status(201).json({
       success: true,
       data: member,
       message: `Member with name ${member.name} created successfully for ${firmData.name}`,
@@ -175,22 +195,41 @@ module.exports.updateMember = asyncHandler(async (req, res, next) => {
     if (!member) {
       throw new AppError("Member not found", 404);
     }
-    // Check if there's an uploaded file
-    if (req.uploadedFile) {
-      // Update the file details
-      const uploadedFile = req.uploadedFile;
-      uploadedFile.firmId = member.firm;
-      uploadedFile.member = member._id;
-      rest.businessCard = uploadedFile._id;
+    // Store references to old files
+    const oldBusinessCardFront = member.businessCardFront;
+    const oldBusinessCardBack = member.businessCardBack;
 
-      // If there's an existing businessCard, delete it
-      if (member.businessCard) {
-        await File.findByIdAndDelete(member.businessCard);
-      }
-      await uploadedFile.save();
-    }
     // Update the member with the new data
     member.set(rest);
+
+    // Helper function to handle file uploads
+    const handleFileUpload = async (file, fieldName) => {
+      if (file) {
+        const uploadedFile = new File({
+          firmId: member.firm,
+          member: member._id,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          buffer: file.buffer,
+        });
+        member[fieldName] = uploadedFile._id;
+        await uploadedFile.save();
+        // If new file is uploaded, remove the old file
+        if (fieldName === "businessCardFront" && oldBusinessCardFront) {
+          await File.findByIdAndDelete(oldBusinessCardFront);
+        }
+        if (fieldName === "businessCardBack" && oldBusinessCardBack) {
+          await File.findByIdAndDelete(oldBusinessCardBack);
+        }
+      }
+    };
+    // Handle file uploads for businessCardFront and businessCardBack
+    if (req.files) {
+      await Promise.all([
+        handleFileUpload(req.files.businessCardFront?.[0], "businessCardFront"),
+        handleFileUpload(req.files.businessCardBack?.[0], "businessCardBack"),
+      ]);
+    }
     await member.save();
     return res.status(200).json({
       success: true,
@@ -213,15 +252,26 @@ module.exports.deleteMember = asyncHandler(async (req, res, next) => {
     if (!member) {
       throw new AppError("Member not found", 404);
     }
-    await Firm.findByIdAndUpdate(member.firm, {
-      $pull: {
-        members: member._id,
-      },
-    });
+
+    // Delete associated files (businessCardFront and businessCardBack)
+    if (member.businessCardFront) {
+      await File.findByIdAndDelete(member.businessCardFront);
+    }
+    if (member.businessCardBack) {
+      await File.findByIdAndDelete(member.businessCardBack);
+    }
+
+    // Delete interactions associated with the member
     await Interaction.deleteMany({ member: member._id });
-    await File.findByIdAndDelete(member.businessCard);
+
+    // Remove the member from the firm's members array
+    await Firm.findByIdAndUpdate(member.firm, {
+      $pull: { members: member._id },
+    });
+
     return res.status(200).json({
       success: true,
+      memberId: member._id, // Include the deleted member's ID in the response
       message: `Member with name ${member.name} deleted successfully`,
     });
   } catch (err) {

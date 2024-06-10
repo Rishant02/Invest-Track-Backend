@@ -20,8 +20,10 @@ router
     "/",
     isAuthenticated,
     isAdmin,
-    upload.single("businessCard"),
-    uploadFile(false),
+    upload.fields([
+      { name: "businessCardFront", maxCount: 1 },
+      { name: "businessCardBack", maxCount: 1 },
+    ]),
     createMember
   )
   .get("/:id", isAuthenticated, isAdmin, getMember)
@@ -29,8 +31,10 @@ router
     "/:id",
     isAuthenticated,
     isAdmin,
-    upload.single("businessCard"),
-    uploadFile(false),
+    upload.fields([
+      { name: "businessCardFront", maxCount: 1 },
+      { name: "businessCardBack", maxCount: 1 },
+    ]),
     updateMember
   )
   .delete("/:id", isAuthenticated, isAdmin, deleteMember)
