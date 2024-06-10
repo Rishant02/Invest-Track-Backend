@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const addressSchema = require("./address.schema");
+const validator = require("validator");
 
 const FirmSchema = new mongoose.Schema(
   {
@@ -14,6 +15,11 @@ const FirmSchema = new mongoose.Schema(
       required: true,
       trim: true,
       enum: ["Domestic", "Foreign"],
+    },
+    website: {
+      type: String,
+      trim: true,
+      validate: [validator.isURL, "Please enter a valid URL"],
     },
     address: addressSchema,
     comment: {
@@ -92,7 +98,6 @@ const InvestorSchema = new mongoose.Schema({
     },
     indianExposure: {
       type: Number,
-      required: true,
     },
   },
   fundFactsheets: [
