@@ -59,28 +59,6 @@ const BrokerSchema = new mongoose.Schema({
 });
 
 const InvestorSchema = new mongoose.Schema({
-  sectors: {
-    type: [String],
-    trim: true,
-    required: true,
-    validate: {
-      validator: function (value) {
-        return value.length > 0;
-      },
-      message: "Please select at least one sector",
-    },
-  },
-  regionalSectors: {
-    type: [String],
-    trim: true,
-    required: true,
-    validate: {
-      validator: function (value) {
-        return value.length > 0;
-      },
-      message: "Please select at least one sector",
-    },
-  },
   regionalFocus: {
     type: [String],
     trim: true,
