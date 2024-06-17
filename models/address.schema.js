@@ -10,7 +10,10 @@ const addressSchema = {
   state: {
     type: String,
     trim: true,
-    required: true,
+  },
+  city: {
+    type: String,
+    trim: true,
   },
   locality: {
     type: String,
@@ -25,7 +28,6 @@ const addressSchema = {
   postalCode: {
     type: String,
     trim: true,
-    required: true,
   },
 };
 

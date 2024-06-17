@@ -303,3 +303,29 @@ module.exports.uploadCoverage = asyncHandler(async (req, res, next) => {
     next(err);
   }
 });
+
+// @desc  Add remark to the firm
+// @route POST /api/firms/:id/remark
+// @access Private
+module.exports.addRemark = asyncHandler(async (req, res, next) => {
+  try {
+    const { id: firmId } = req.params;
+    const firm = await Firm.findByIdAndUpdate(
+      firmId,
+      {
+        $set: { remark: req.body.remark },
+      },
+      { new: true, runValidators: true }
+    );
+    if (!firm) {
+      throw new AppError("Firm not found", 404);
+    }
+    res.status(200).json({
+      success: true,
+      message: "Remark added successfully",
+      data: firm,
+    });
+  } catch (err) {
+    next(err);
+  }
+});

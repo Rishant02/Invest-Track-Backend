@@ -40,6 +40,19 @@ const memberSchema = new mongoose.Schema(
       required: true,
       validate: [validator.isEmail, "Please enter a valid email"],
     },
+    website: {
+      type: String,
+      trim: true,
+      validate: [validator.isURL, "Please enter a valid URL"],
+    },
+    title: {
+      type: String,
+      trim: true,
+    },
+    remark: {
+      type: String,
+      trim: true,
+    },
     firm: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Firm",
@@ -72,9 +85,15 @@ const memberSchema = new mongoose.Schema(
       required: false,
     },
     address: addressSchema,
-    businessCard: {
+    businessCardFront: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "File",
+      required: false,
+    },
+    businessCardBack: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "File",
+      required: false,
     },
     comment: {
       type: String,
@@ -120,7 +139,6 @@ const investorPersonSchema = new mongoose.Schema({
     globalExposure: Number,
     indianExposure: {
       type: Number,
-      required: true,
     },
   },
   regionalFocus: {
