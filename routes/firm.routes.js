@@ -13,6 +13,7 @@ const {
   uploadFundSheet,
   deleteFundSheet,
   getFundSheets,
+  addRemark,
 } = require("../controllers/firm.controller");
 
 router
@@ -30,6 +31,7 @@ router
     uploadFile(true),
     uploadFundSheet
   )
-  .delete("/:id/sheet/:sheetId", isAuthenticated, isAdmin, deleteFundSheet);
+  .delete("/:id/sheet/:sheetId", isAuthenticated, isAdmin, deleteFundSheet)
+  .post("/:id/remark", isAuthenticated, isAdmin, addRemark);
 
 module.exports = router;

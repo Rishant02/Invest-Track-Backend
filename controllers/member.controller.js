@@ -337,3 +337,32 @@ module.exports.moveMember = asyncHandler(async (req, res, next) => {
     next(err);
   }
 });
+
+// @desc  Add remark to the member
+// @route POST /api/members/:id/remark
+// @access Private
+module.exports.addRemark = asyncHandler(async (req, res, next) => {
+  try {
+    const { id: memberId } = req.params;
+    const member = await Member.findByIdAndUpdate(
+      memberId,
+      {
+        $set: { remark: req.body.remark },
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+    if (!member) {
+      throw new AppError("Member not found", 404);
+    }
+    res.status(201).json({
+      success: true,
+      data: member,
+      message: "Remark added successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+});

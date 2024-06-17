@@ -21,6 +21,10 @@ const FirmSchema = new mongoose.Schema(
       trim: true,
       validate: [validator.isURL, "Please enter a valid URL"],
     },
+    remark: {
+      type: String,
+      trim: true,
+    },
     address: addressSchema,
     comment: {
       type: String,

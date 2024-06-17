@@ -45,6 +45,14 @@ const memberSchema = new mongoose.Schema(
       trim: true,
       validate: [validator.isURL, "Please enter a valid URL"],
     },
+    title: {
+      type: String,
+      trim: true,
+    },
+    remark: {
+      type: String,
+      trim: true,
+    },
     firm: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Firm",
