@@ -62,7 +62,7 @@ module.exports.getFirms = asyncHandler(async (req, res, next) => {
         query = query.skip(skip).limit(pageSize);
       }
     }
-    const firms = await query.exec();
+    const firms = await query.sort({ firmType: 1 }).exec();
 
     return res.status(200).json({
       success: true,

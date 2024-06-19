@@ -36,6 +36,7 @@ const FirmSchema = new mongoose.Schema(
       required: true,
     },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: "Member" }],
+    events: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
     isActive: {
       type: Boolean,
       default: true,

@@ -102,6 +102,7 @@ const memberSchema = new mongoose.Schema(
     interactions: [
       { type: mongoose.Schema.Types.ObjectId, ref: "Interaction" },
     ],
+    events: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
     isGift: {
       type: Boolean,
       default: false,

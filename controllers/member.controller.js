@@ -152,7 +152,9 @@ module.exports.getMembersByFirm = asyncHandler(async (req, res, next) => {
     if (!firm) {
       throw new AppError("Firm not found", 404);
     }
-    const members = await Member.find({ firm: firm._id }).populate("firm");
+    const members = await Member.find({ firm: firm._id })
+      .sort({ memberType: 1 })
+      .populate("firm");
     return res.status(200).json({
       success: true,
       data: members,

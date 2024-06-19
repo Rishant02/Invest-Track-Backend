@@ -54,6 +54,7 @@ app.use("/api/firms", require("./routes/firm.routes"));
 app.use("/api/coverages", require("./routes/coverage.routes"));
 app.use("/api/members", require("./routes/member.routes"));
 app.use("/api/interactions", require("./routes/interaction.routes"));
+app.use("/api/events", require("./routes/event.routes"));
 app.use("/api/dashboard", require("./routes/dashboard.routes"));
 app.use("/api/files", require("./routes/file.routes"));
 app.use(ErrorHandler);
