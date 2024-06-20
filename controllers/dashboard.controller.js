@@ -1,13 +1,12 @@
-const mongoose = require("mongoose");
 const asyncHandler = require("express-async-handler");
+const Coverage = require("../models/coverage.model");
 const { Firm, Broker, Investor } = require("../models/firm.model");
-const {
-  Member,
-  BrokerMember,
-  InvestorMember,
-} = require("../models/member.model");
+const { Member, InvestorMember } = require("../models/member.model");
 const Interaction = require("../models/interaction.model");
 
+// @desc  Get Stats for dashboard
+// @route GET /api/dashboard
+// @access Private
 module.exports.getDashboard = asyncHandler(async (req, res, next) => {
   try {
     const [
@@ -18,6 +17,11 @@ module.exports.getDashboard = asyncHandler(async (req, res, next) => {
       totalAnalysts,
       totalFundManagers,
       totalInteractions,
+      byBrokerLocType,
+      byInvestorLocType,
+      byBrokerCoverage,
+      byInvestorMemberCountry,
+      byInvestorMemberRegionalFocus,
     ] = await Promise.all([
       Firm.estimatedDocumentCount(),
       Broker.countDocuments(),
@@ -26,40 +30,57 @@ module.exports.getDashboard = asyncHandler(async (req, res, next) => {
       Member.countDocuments({ designation: "Analyst" }),
       Member.countDocuments({ designation: "Fund Manager" }),
       Interaction.estimatedDocumentCount(),
+      Broker.aggregate([
+        { $unwind: "$locationType" },
+        { $group: { _id: "$locationType", count: { $sum: 1 } } },
+        { $limit: 2 },
+        { $project: { _id: 0, locationType: "$_id", count: 1 } },
+      ]),
+      Investor.aggregate([
+        { $unwind: "$locationType" },
+        { $group: { _id: "$locationType", count: { $sum: 1 } } },
+        { $limit: 2 },
+        { $project: { _id: 0, locationType: "$_id", count: 1 } },
+      ]),
+      Coverage.aggregate([
+        {
+          $lookup: {
+            from: "firms",
+            localField: "firm",
+            foreignField: "_id",
+            as: "firmDetails",
+          },
+        },
+        { $unwind: "$firmDetails" },
+        { $match: { quarter: { $in: [1, 2] } } },
+        {
+          $project: {
+            _id: 0,
+            name: "$firmDetails.name",
+            quarter: "$quarter",
+            fiscalYear: "$fiscalYear",
+            tp: "$tp",
+            recommendation: "$recommendation",
+          },
+        },
+        { $sort: { tp: -1 } },
+        { $limit: 10 },
+      ]),
+      InvestorMember.aggregate([
+        { $unwind: "$address.country" },
+        { $group: { _id: "$address.country", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 10 },
+        { $project: { _id: 0, country: "$_id", count: 1 } },
+      ]),
+      InvestorMember.aggregate([
+        { $unwind: "$regionalFocus" },
+        { $group: { _id: "$regionalFocus", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 10 },
+        { $project: { _id: 0, regionalFocus: "$_id", count: 1 } },
+      ]),
     ]);
-
-    const getMemberStats = async (Model, type) => {
-      const bySectors = await Model.aggregate([
-        { $unwind: "$sectors" },
-        { $group: { _id: "$sectors", count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-        { $limit: 10 },
-        { $project: { _id: 0, sector: "$_id", count: 1 } },
-      ]);
-
-      const byLocality = await Model.aggregate([
-        { $unwind: "$address.locality" },
-        { $group: { _id: "$address.locality", count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-        { $limit: 10 },
-        { $project: { _id: 0, locality: "$_id", count: 1 } },
-      ]);
-
-      const byDesignation = await Model.aggregate([
-        { $unwind: "$designation" },
-        { $group: { _id: "$designation", count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-        { $project: { _id: 0, designation: "$_id", count: 1 } },
-      ]);
-
-      return { bySectors, byLocality, byDesignation, type };
-    };
-
-    const brokerMemberStats = await getMemberStats(BrokerMember, "broker");
-    const investorMemberStats = await getMemberStats(
-      InvestorMember,
-      "investor"
-    );
 
     return res.status(200).json({
       success: true,
@@ -73,8 +94,22 @@ module.exports.getDashboard = asyncHandler(async (req, res, next) => {
           totalFundManagers,
           totalInteractions,
         },
-        brokerMemberStats,
-        investorMemberStats,
+        firmStats: {
+          broker: {
+            byBrokerLocType,
+            byBrokerCoverage,
+          },
+          investor: {
+            byInvestorLocType,
+          },
+        },
+        memberStats: {
+          broker: {},
+          investor: {
+            byInvestorMemberCountry,
+            byInvestorMemberRegionalFocus,
+          },
+        },
       },
     });
   } catch (err) {

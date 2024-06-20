@@ -24,6 +24,15 @@ const CoverageSchema = new mongoose.Schema(
       min: 1,
       max: 4,
     },
+    note: {
+      type: String,
+      trim: true,
+    },
+    recommendation: {
+      type: String,
+      enum: ["Buy", "Sell", "Hold"],
+      trim: true,
+    },
     coverageDate: {
       type: Date,
       default: Date.now,

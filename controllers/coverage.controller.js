@@ -79,28 +79,40 @@ module.exports.createCoverage = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/coverages/:brokerId/:id
 // @access  Private
 module.exports.updateCoverage = asyncHandler(async (req, res, next) => {
+  const { brokerId, id: coverageId } = req.params;
+  const { uploadedFile } = req;
+
   try {
-    const { brokerId, id: coverageId } = req.params;
-    const broker = await Broker.findById(brokerId);
-    if (!broker) {
-      throw new AppError("Broker not found", 404);
+    // Fetch broker and coverage in parallel
+    const [broker, coverage] = await Promise.all([
+      Broker.findById(brokerId),
+      Coverage.findById(coverageId),
+    ]);
+
+    // Check if broker or coverage does not exist
+    if (!broker || !coverage) {
+      const notFoundEntity = !broker ? "Broker" : "Coverage";
+      throw new AppError(`${notFoundEntity} not found`, 404);
     }
-    const coverage = await Coverage.findById(coverageId);
-    if (!coverage) {
-      throw new AppError("Coverage not found", 404);
-    }
-    const file = req.uploadedFile;
-    if (file) {
+
+    // Handle file upload if present
+    if (uploadedFile) {
       await File.findByIdAndDelete(coverage.coverageFile);
-      req.body.coverageFile = file._id;
+      req.body.coverageFile = uploadedFile._id;
     }
+
+    // Update coverage
     const newCoverage = await Coverage.findByIdAndUpdate(coverageId, req.body, {
       new: true,
       runValidators: true,
     });
-    if (file) {
-      await file.save();
+
+    // Save the new file if it exists
+    if (uploadedFile) {
+      await uploadedFile.save();
     }
+
+    // Send success response
     res.status(200).json({
       success: true,
       data: newCoverage,
@@ -146,10 +158,10 @@ module.exports.deleteCoverage = asyncHandler(async (req, res, next) => {
 // @access  Private
 module.exports.getCoverage = asyncHandler(async (req, res, next) => {
   try {
-    const { brokerId, id: coverageId } = req.params;
+    const { id: coverageId } = req.params;
     const coverage = await Coverage.findById(coverageId)
       .populate("firm", "name")
-      .populate("coverageFile", "-buffer")
+      .populate("coverageFile")
       .lean();
     if (!coverage) {
       throw new AppError("Coverage not found", 404);

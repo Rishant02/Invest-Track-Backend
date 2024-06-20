@@ -19,7 +19,7 @@ router
     isAuthenticated,
     isAdmin,
     upload.single("coverage"),
-    uploadFile(true),
+    uploadFile(false),
     createCoverage
   )
   .get("/:brokerId/:id", isAuthenticated, isAdmin, getCoverage)
