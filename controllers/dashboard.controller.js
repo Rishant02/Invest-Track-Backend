@@ -21,6 +21,8 @@ module.exports.getDashboard = asyncHandler(async (req, res, next) => {
       byInvestorLocType,
       byInvestorMemberCountry,
       byInvestorMemberRegionalFocus,
+      byFirmIndianExposure,
+      byMemberIndianExposure,
     ] = await Promise.all([
       Firm.estimatedDocumentCount(),
       Broker.countDocuments(),
@@ -54,6 +56,18 @@ module.exports.getDashboard = asyncHandler(async (req, res, next) => {
         { $sort: { count: -1 } },
         { $limit: 10 },
         { $project: { _id: 0, regionalFocus: "$_id", count: 1 } },
+      ]),
+      Investor.aggregate([
+        { $match: { "fundSize.indianExposure": { $ne: null } } },
+        { $sort: { "fundSize.indianExposure": -1 } },
+        { $limit: 10 },
+        { $project: { _id: 0, name: 1, count: "$fundSize.indianExposure" } },
+      ]),
+      InvestorMember.aggregate([
+        { $match: { "fundSize.indianExposure": { $ne: null } } },
+        { $sort: { "fundSize.indianExposure": -1 } },
+        { $limit: 10 },
+        { $project: { _id: 0, name: 1, count: "$fundSize.indianExposure" } },
       ]),
     ]);
     const byBrokerCoverage = await Coverage.aggregate([
@@ -149,6 +163,7 @@ module.exports.getDashboard = asyncHandler(async (req, res, next) => {
           },
           investor: {
             byInvestorLocType,
+            byFirmIndianExposure,
           },
         },
         memberStats: {
@@ -156,6 +171,7 @@ module.exports.getDashboard = asyncHandler(async (req, res, next) => {
           investor: {
             byInvestorMemberCountry,
             byInvestorMemberRegionalFocus,
+            byMemberIndianExposure,
           },
         },
       },
