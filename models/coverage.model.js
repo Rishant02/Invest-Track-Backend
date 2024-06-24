@@ -41,4 +41,9 @@ const CoverageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+CoverageSchema.index(
+  { firm: 1, fiscalYear: 1, quarter: 1 },
+  { unique: true, sparse: true, background: true }
+);
+
 module.exports = mongoose.model("Coverage", CoverageSchema);
