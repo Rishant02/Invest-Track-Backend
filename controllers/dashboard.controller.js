@@ -19,7 +19,6 @@ module.exports.getDashboard = asyncHandler(async (req, res, next) => {
       totalInteractions,
       byBrokerLocType,
       byInvestorLocType,
-      byBrokerCoverage,
       byInvestorMemberCountry,
       byInvestorMemberRegionalFocus,
     ] = await Promise.all([
@@ -42,30 +41,6 @@ module.exports.getDashboard = asyncHandler(async (req, res, next) => {
         { $limit: 2 },
         { $project: { _id: 0, locationType: "$_id", count: 1 } },
       ]),
-      Coverage.aggregate([
-        {
-          $lookup: {
-            from: "firms",
-            localField: "firm",
-            foreignField: "_id",
-            as: "firmDetails",
-          },
-        },
-        { $unwind: "$firmDetails" },
-        { $match: { quarter: { $in: [1, 2] } } },
-        {
-          $project: {
-            _id: 0,
-            name: "$firmDetails.name",
-            quarter: "$quarter",
-            fiscalYear: "$fiscalYear",
-            tp: "$tp",
-            recommendation: "$recommendation",
-          },
-        },
-        { $sort: { tp: -1 } },
-        { $limit: 10 },
-      ]),
       InvestorMember.aggregate([
         { $unwind: "$address.country" },
         { $group: { _id: "$address.country", count: { $sum: 1 } } },
@@ -80,6 +55,79 @@ module.exports.getDashboard = asyncHandler(async (req, res, next) => {
         { $limit: 10 },
         { $project: { _id: 0, regionalFocus: "$_id", count: 1 } },
       ]),
+    ]);
+    const byBrokerCoverage = await Coverage.aggregate([
+      {
+        $lookup: {
+          from: "firms",
+          localField: "firm",
+          foreignField: "_id",
+          as: "firm",
+        },
+      },
+      { $unwind: "$firm" },
+      {
+        $sort: {
+          fiscalYear: 1,
+          quarter: 1,
+          tp: -1,
+        },
+      },
+      {
+        $group: {
+          _id: { firm: "$firm.name", fiscalYear: "$fiscalYear" },
+          Q1: {
+            $push: {
+              $cond: [
+                { $eq: ["$quarter", 1] },
+                { tp: "$tp", recommendation: "$recommendation" },
+                null,
+              ],
+            },
+          },
+          Q2: {
+            $push: {
+              $cond: [
+                { $eq: ["$quarter", 2] },
+                { tp: "$tp", recommendation: "$recommendation" },
+                null,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          firm: "$_id.firm",
+          fiscalYear: "$_id.fiscalYear",
+          Q1: {
+            $arrayElemAt: [
+              { $filter: { input: "$Q1", cond: { $ne: ["$$this", null] } } },
+              0,
+            ],
+          },
+          Q2: {
+            $arrayElemAt: [
+              { $filter: { input: "$Q2", cond: { $ne: ["$$this", null] } } },
+              0,
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$fiscalYear",
+          topFirms: { $push: { firm: "$firm", Q1: "$Q1", Q2: "$Q2" } },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          fiscalYear: "$_id",
+          topFirms: { $slice: ["$topFirms", 10] },
+        },
+      },
     ]);
 
     return res.status(200).json({
