@@ -89,23 +89,15 @@ module.exports.getDashboard = asyncHandler(async (req, res, next) => {
       },
       {
         $group: {
-          _id: { firm: "$firm.name", fiscalYear: "$fiscalYear" },
-          Q1: {
-            $push: {
-              $cond: [
-                { $eq: ["$quarter", 1] },
-                { tp: "$tp", recommendation: "$recommendation" },
-                null,
-              ],
-            },
+          _id: {
+            firm: "$firm.name",
+            fiscalYear: "$fiscalYear",
+            quarter: "$quarter",
           },
-          Q2: {
+          topFirms: {
             $push: {
-              $cond: [
-                { $eq: ["$quarter", 2] },
-                { tp: "$tp", recommendation: "$recommendation" },
-                null,
-              ],
+              tp: "$tp",
+              recommendation: "$recommendation",
             },
           },
         },
@@ -113,33 +105,36 @@ module.exports.getDashboard = asyncHandler(async (req, res, next) => {
       {
         $project: {
           _id: 0,
-          firm: "$_id.firm",
           fiscalYear: "$_id.fiscalYear",
-          Q1: {
-            $arrayElemAt: [
-              { $filter: { input: "$Q1", cond: { $ne: ["$$this", null] } } },
-              0,
-            ],
-          },
-          Q2: {
-            $arrayElemAt: [
-              { $filter: { input: "$Q2", cond: { $ne: ["$$this", null] } } },
-              0,
-            ],
-          },
+          quarter: "$_id.quarter",
+          firm: "$_id.firm",
+          topFirms: { $arrayElemAt: ["$topFirms", 0] }, // Take the first element only
         },
       },
       {
         $group: {
-          _id: "$fiscalYear",
-          topFirms: { $push: { firm: "$firm", Q1: "$Q1", Q2: "$Q2" } },
+          _id: { fiscalYear: "$fiscalYear", quarter: "$quarter" },
+          firms: {
+            $push: {
+              firm: "$firm",
+              tp: "$topFirms.tp",
+              recommendation: "$topFirms.recommendation",
+            },
+          },
         },
       },
       {
         $project: {
           _id: 0,
-          fiscalYear: "$_id",
-          topFirms: { $slice: ["$topFirms", 10] },
+          fiscalYear: "$_id.fiscalYear",
+          quarter: "$_id.quarter",
+          topFirms: { $slice: ["$firms", 10] }, // Limit to top 10 firms
+        },
+      },
+      {
+        $sort: {
+          fiscalYear: 1,
+          quarter: -1,
         },
       },
     ]);
