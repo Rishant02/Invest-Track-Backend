@@ -57,6 +57,7 @@ app.use("/api/interactions", require("./routes/interaction.routes"));
 app.use("/api/events", require("./routes/event.routes"));
 app.use("/api/dashboard", require("./routes/dashboard.routes"));
 app.use("/api/files", require("./routes/file.routes"));
+app.use("/api/csc", require("./routes/csc.routes"));
 app.use(ErrorHandler);
 app.use(express.static(path.join(__dirname, "dist")));
 app.get("*", (req, res) => {
